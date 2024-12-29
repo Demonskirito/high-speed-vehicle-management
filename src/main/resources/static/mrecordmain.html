@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>mrecord here</title>
+<link rel="stylesheet" href="js/bootstrap/css/bootstrap.css" />
+<style type="text/css">
+.pagination {
+	margin: 0!important;
+}
+#addform{
+	position: absolute;width: 300px;height: 255px;
+	opacity: 0.8;filter: alpha(opacity=80);
+	background-color: #eee;padding:0 20px
+}
+</style>
+</head>
+<body>
+<div id="app" class="container">
+	<ol class="breadcrumb">
+		<li><a href="#">高速车辆管理系统</a></li>
+		<li><a href="#">收费记录管理</a></li>
+		<li><a href="#">{{action}}</a></li>
+	</ol>
+<div v-show="show">
+	<h2 class="page-header">收费记录展示</h2>
+	<form class="form-inline" role="form">
+		<input type="text" class="form-control" placeholder="车牌号">
+		<button type="button" @click="selectList" class="btn btn-success">搜索</button>
+		<button type="button" @click="deleteList" class="btn btn-danger">删除</button>
+	</form>
+	<hr>
+	<table class="table table-bordered table-striped">
+	<thead>
+		<tr>
+			<td align="center"><input type="checkbox" id="ck" name="ck" @click="allchecked()" v-model="checked" /></td>
+			<th>序号</th>
+			<th>车牌号</th>
+			<th>进站点</th>
+			<th>进站时间</th>
+			<th>出站点</th>
+			<th>出站时间</th>
+			<th>金额</th>
+			<th>状态</th>
+			<th>备注</th>
+			<th>操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr v-for="(temp,i) in list">
+			<td align="center"><input type="checkbox" id="dk" name="dk" :value="temp.mid" v-model="mids" /></td>
+			<td>{{temp.mid}}</td>
+			<td>{{temp.cid}}</td>
+			<td>{{temp.inzname}}</td>
+			<td>{{temp.bdate}}</td>
+			<td>{{temp.outzname}}</td>
+			<td>{{temp.edate}}</td>
+			<td>{{temp.mprice}}</td>
+			<td>{{temp.mstate?'已进站':'已出站'}}</td>
+			<td>{{temp.mbackup}}</td>
+			<td><a v-show="temp.mstate" href="javascript:;" @click="toupdate(i, show=false, url='update', action='出站')" class="btn btn-primary btn-sm update-btn">出站</a>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<div class="row">
+		<div class="col-sm-4">
+			<div id="pagerInfo">
+				共{{total }}条数据，{{curpage }}/{{totalpage }}页，
+				<select id="line" name="line" v-model="line">
+					<option v-for="l in pagelist" :value="l">{{l}}</option>
+				</select>行
+			</div>
+		</div>
+		<div class="col-sm-8">
+			<nav id="pagerNav">
+	        	<ul class="pagination pagination-sm pull-right">
+	        		<li><a href="javascript:void(0);" @click="curpage=1" id="firstBtn">首页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage<=1)?1:curpage-1" id="prevBtn">上页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage>=totalpage)?totalpage:curpage+1" id="nextBtn">下页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=totalpage" id="lastBtn">末页</a></li>
+	        	</ul>
+	        </nav>
+		</div>
+	</div>
+	<div class="row" style="margin-top:20px">
+		<div class="col-sm-offset-8 col-sm-4">
+			<a href="#" @click="toinsert(show=false, url='insert', action='进站')" class="btn btn-success btn-block">增加进站</a>
+		</div>
+	</div>
+</div>
+<div v-show="!show">
+	<h2 class="page-header">车辆{{action}}</h2>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-xs-2">序号</label>
+		<div class="col-xs-10">
+			<input type="text" id="mid" name="mid" v-model="mrecord.mid" readonly class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">车牌号</label>
+		<div class="col-xs-9">
+			<select name="cid" id="cid" :disabled="url=='update'" v-model="mrecord.cid" class="form-control">
+				<option v-for="cheliang in cheliangList" :value="cheliang.cid">{{cheliang.cid}}</option>
+			</select>
+		</div>
+		<div class="col-xs-1">
+			<span>
+				<img src="js/edit_add.png" @click="showadd(event, refObj=refList.Cheliang)">
+			</span>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">进站点</label>
+		<div class="col-xs-9">
+			<select name="beginid" id="beginid" :disabled="url=='update'" v-model="mrecord.beginid" class="form-control">
+				<option v-for="zhandian in zhandianList" :value="zhandian.zid">{{zhandian.zname}}</option>
+			</select>
+		</div>
+		<div class="col-xs-1">
+			<span>
+				<img src="js/edit_add.png" @click="showadd(event, refObj=refList.Zhandian)">
+			</span>
+		</div>
+	</div>
+	<div v-show="inout">
+	<div class="form-group">
+		<label for="" class="col-xs-2">进站时间</label>
+		<div class="col-xs-10">
+			<input type="text" id="bdate" name="bdate" readonly v-model="mrecord.bdate" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">出站点</label>
+		<div class="col-xs-10">
+			<select name="endid" id="endid" v-model="mrecord.endid" @change="selectMoney()" class="form-control">
+				<option value="">请选择</option>
+				<option v-for="zhandian in outList" :value="zhandian.zid">{{zhandian.zname}}</option>
+			</select>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">金额</label>
+		<div class="col-xs-10">
+			<input type="text" id="mprice" name="mprice" readonly v-model="mrecord.mprice" class="form-control"/>
+		</div>
+	</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">状态</label>
+		<div class="col-xs-10">
+			<input type="text" id="mstate" name="mstate" readonly v-model="mrecord.mstate" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">备注</label>
+		<div class="col-xs-10">
+			<input type="text" id="mbackup" name="mbackup" v-model="mrecord.mbackup" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button"  :value="action" :disabled="outdis" class="btn btn-success" id="addBtn" @click="modify"/>
+			<input type="button"  value="取消" class="btn btn-muted" @click="show=true, url='list', action='数据列表', mrecord.mstate=1"/>
+		</div>
+	</div>
+	</form>
+</div>
+<div id="addform" :style="{left: x+'px', top: y+'px'}" v-show="fk">
+	<h3 class="page-header">{{refObj.desc}}录入</h3>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.id}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txid" name="txid" v-model="refObj.idv" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.name}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txname" name="txname" v-model="refObj.namev" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button" @click="saverefinfo" value="保存" class="btn btn-success" id="addBtn"/>
+			<input type="button" @click="fk=false" value="关闭" class="btn btn-danger"/>
+		</div>
+	</div>
+	</form>
+</div>
+</div>
+<script type="text/javascript" src="js/vue.min.js"></script>
+<script type="text/javascript" src="js/axios.min.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/layer/layer.js"></script>
+<script type="text/javascript">
+var vm = new Vue({
+	el: "#app",
+	data: {
+		show: true,
+		msg: '',
+		url: 'list',
+		action: '数据列表',
+		mrecord: {},
+		list: [],
+		checked : false,
+		mids : [],
+		curpage : 1,
+		total : 0,
+		pagelist: [3,4,5],
+		line: 3,
+		fk: false,
+		x: 0,
+		y: 0,
+		refObj: {},
+		refList: {
+			Cheliang: {obj: 'cheliang', id: 'cid', name: 'cname', url: 'cheliang/insert', refid: 'cid', desc: '车辆'},
+			Zhandian: {obj: 'zhandian', id: 'zid', name: 'zname', url: 'zhandian/insert', refid: 'beginid', desc: '站点'},
+		},
+		cheliangList: [],
+		zhandianList: [],
+		inout: false,
+		outList: [],
+		outdis: false,
+	},
+	created: function() {
+		axios.post("http://localhost:8080/mrecord/selectTotal").then(res=>{
+			this.total = res.data;
+		})
+		this.selectByPage();
+		axios.post("http://localhost:8080/cheliang/selectNotIn").then(res=>{
+			this.cheliangList = res.data;
+		})
+		axios.post("http://localhost:8080/zhandian/selectList").then(res=>{
+			this.zhandianList = res.data;
+		})
+	},
+	computed: {
+		totalpage: function() {
+			return parseInt((this.line-1+this.total)/this.line);
+		},
+		param: function() {
+			return "page="+this.curpage+"&line="+this.line;
+		}
+	},
+	watch: {
+		curpage: function(newCurpage) {
+			this.selectByPage();
+		},
+		line: function(newLine) {
+			if(this.curpage>this.totalpage){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		},
+		total: function(newTotal) {
+			if(this.curpage>this.totalpage && this.totalpage!=0){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		}
+	},
+	methods: {
+		selectList: function() {
+			this.curpage = 1;
+		},
+		selectByPage: function() {
+			if(this.total==0){
+				this.list = [];
+				return;
+			}
+			axios.post("http://localhost:8080/mrecord/selectByPage?"+this.param).then(res=>{
+				this.list = res.data;
+				this.allchecked();
+			});
+		},
+		deletemrecord: function(i) {
+			layer.confirm('确定要删除此收费记录吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/mrecord/delete?mid="+this.list[i].mid).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.list.splice(i, 1);
+						this.total -= 1;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		allchecked: function() {
+			this.mids = [];
+			if(this.checked){
+				for (var i = 0; i < this.list.length; i++) {
+					this.mids.push(this.list[i].mid);
+				}
+			}
+		},
+		toinsert: function() {
+			this.mrecord = {
+				cid: this.cheliangList[0].cid,
+				beginid: this.zhandianList[0].zid,
+				mstate: 1,
+			};
+			this.inout = false;
+			this.outdis = false;
+			console.log(this.outdis);
+		},
+		modify: function() {
+			axios.post("http://localhost:8080/mrecord/"+this.url, this.mrecord).then(res=>{
+				if(res.data=="1"){
+					this.msg = "操作成功！";
+					if(this.url.lastIndexOf("insert")>=0){
+						this.total += 1;
+						for(i=0;i<this.cheliangList.length;i++){
+							if(this.mrecord.cid==this.cheliangList[i].cid){
+								this.cheliangList.splice(i,1);
+								break;
+							}
+						}
+						//去除已进站的车辆
+						this.toinsert();
+					}else{
+						this.show=true;
+						this.url='list';
+						this.action='数据列表';
+						this.mrecord.mstate=1;
+						this.selectByPage();
+					}
+				}else{
+					this.msg = "操作失败！";
+				}
+				layer.msg(this.msg);
+			})
+		},
+		toupdate: function(i) {
+			//把记录中的车辆放入车辆list
+			this.cheliangList.push({cid: this.list[i].cid});
+			this.mrecord = this.list[i];
+			this.mrecord.mstate = 0;
+			this.outList = [];
+			this.inout = true;
+			this.outdis = true;
+			//获取所有站点---出站站点，不包括进站站点
+			for(i=0;i<this.zhandianList.length;i++){
+				if(this.zhandianList[i].zid != this.mrecord.beginid){
+					this.outList.push(this.zhandianList[i]);
+				}
+			}
+			this.mrecord.endid = "";
+		},
+		selectMoney(){
+			if(this.url == "insert"){
+				return;
+			}
+			if(!this.mrecord.endid){
+				this.outdis = true;
+				this.mrecord.mprice = 0;
+				return;
+			}
+			//计算费用
+			axios.post("http://localhost:8080/mrecord/selectMoney", this.mrecord).then(res=>{
+				//res为负，余额不足
+				//显示收费金额或欠费多少
+				this.mrecord.mprice = res.data;
+				if(res.data<0){
+					layer.msg("余额不足");
+				}
+				this.outdis = res.data<0;
+			})
+		},
+		deleteList: function() {
+			if(this.mids.length==0){
+				this.msg = "必须选中一行！";
+				layer.msg(this.msg);
+				return;
+			}
+			layer.confirm('确定要删除已选收费记录吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/mrecord/deleteList", this.mids).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.total -= this.mids.length;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		showadd: function(event) {
+			this.fk = true;
+			this.refObj.idv = "";
+			this.refObj.namev = "";
+			this.x = pageX(event.target) - 325;
+			this.y = pageY(event.target) - 80;
+		},
+		saverefinfo: function () {
+			var param = {};
+			param[this.refObj.id] = this.refObj.idv;
+			param[this.refObj.name] = this.refObj.namev;
+			axios.post(this.refObj.url, param).then(res=>{
+				if(res.data=="1"){
+					this[this.refObj.obj+"List"].push(param);
+					this.mrecord[this.refObj.refid] = this.refObj.idv;
+				}else{
+					this.msg = "操作失败！";
+					layer.msg(this.msg);
+				}
+			});
+		}
+	}
+})
+
+function pageX(elem){
+    return elem.offsetParent?(elem.offsetLeft+pageX(elem.offsetParent)):elem.offsetLeft;
+}
+function pageY(elem){
+    return elem.offsetParent?(elem.offsetTop+pageY(elem.offsetParent)):elem.offsetTop;
+}
+
+</script>
+</body>
+</html>

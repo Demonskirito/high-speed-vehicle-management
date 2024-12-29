@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>vrecord here</title>
+<link rel="stylesheet" href="js/bootstrap/css/bootstrap.css" />
+<style type="text/css">
+.pagination {
+	margin: 0!important;
+}
+#addform{
+	position: absolute;width: 300px;height: 255px;
+	opacity: 0.8;filter: alpha(opacity=80);
+	background-color: #eee;padding:0 20px
+}
+</style>
+</head>
+<body>
+<div id="app" class="container">
+	<ol class="breadcrumb">
+		<li><a href="#">高速车辆管理系统</a></li>
+		<li><a href="#">违章记录管理</a></li>
+		<li><a href="#">{{action}}</a></li>
+	</ol>
+<div v-show="show">
+	<h2 class="page-header">违章记录展示</h2>
+	<form class="form-inline" role="form">
+		<input type="text" class="form-control" placeholder="车牌号">
+		<button type="button" @click="selectList" class="btn btn-success">搜索</button>
+		<button type="button" @click="deleteList" class="btn btn-danger">删除</button>
+	</form>
+	<hr>
+	<table class="table table-bordered table-striped">
+	<thead>
+		<tr>
+			<td align="center"><input type="checkbox" id="ck" name="ck" @click="allchecked()" v-model="checked" /></td>
+			<th>序号</th>
+			<th>车牌号</th>
+			<th>违章行为</th>
+			<th>违章时间</th>
+			<th>罚款</th>
+			<th>扣分</th>
+			<th>违章地点</th>
+			<th>状态</th>
+			<th>操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr v-for="(temp,i) in list">
+			<td align="center"><input type="checkbox" id="dk" name="dk" :value="temp.vid" v-model="vids" /></td>
+			<td>{{temp.vid}}</td>
+			<td>{{temp.cid}}</td>
+			<td>{{temp.wid}}</td>
+			<td>{{temp.vtime}}</td>
+			<td>{{temp.wmoney}}</td>
+			<td>{{temp.wscore}}</td>
+			<td>{{temp.vaddr}}</td>
+			<td>{{temp.vstate?'已处理':'未处理'}}</td>
+			<td><a v-show="temp.vstate==0" href="javascript:;" @click="toupdate(i)" class="btn btn-primary btn-sm update-btn">处罚</a>
+				<a v-show="temp.vstate==0" href="javascript:;" @click="deletevrecord(i)" class="btn btn-danger btn-sm del-btn" data-id="6">删除</a>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<div class="row">
+		<div class="col-sm-4">
+			<div id="pagerInfo">
+				共{{total }}条数据，{{curpage }}/{{totalpage }}页，
+				<select id="line" name="line" v-model="line">
+					<option v-for="l in pagelist" :value="l">{{l}}</option>
+				</select>行
+			</div>
+		</div>
+		<div class="col-sm-8">
+			<nav id="pagerNav">
+	        	<ul class="pagination pagination-sm pull-right">
+	        		<li><a href="javascript:void(0);" @click="curpage=1" id="firstBtn">首页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage<=1)?1:curpage-1" id="prevBtn">上页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage>=totalpage)?totalpage:curpage+1" id="nextBtn">下页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=totalpage" id="lastBtn">末页</a></li>
+	        	</ul>
+	        </nav>
+		</div>
+	</div>
+	<div class="row" style="margin-top:20px">
+		<div class="col-sm-offset-8 col-sm-4">
+			<a href="#" @click="toinsert(show=false, url='insert', action='录入')" class="btn btn-success btn-block">增加一条</a>
+		</div>
+	</div>
+</div>
+<div v-show="!show">
+	<h2 class="page-header">违章记录{{action}}</h2>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-xs-2">序号</label>
+		<div class="col-xs-10">
+			<input type="text" id="vid" name="vid" readonly v-model="vrecord.vid" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">车牌号</label>
+		<div class="col-xs-9">
+			<select name="cid" id="cid" v-model="vrecord.cid" class="form-control">
+				<option v-for="cheliang in cheliangList" :value="cheliang.cid">{{cheliang.cid}}</option>
+			</select>
+		</div>
+		<div class="col-xs-1">
+			<span>
+				<img src="js/edit_add.png" @click="showadd(event, refObj=refList.Cheliang)">
+			</span>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">违章码</label>
+		<div class="col-xs-9">
+			<select name="wid" id="wid" v-model="vrecord.wid" class="form-control">
+				<option v-for="wzitem in wzitemList" :value="wzitem.wid">{{wzitem.wcontent}}</option>
+			</select>
+		</div>
+		<div class="col-xs-1">
+			<span>
+				<img src="js/edit_add.png" @click="showadd(event, refObj=refList.Wzitem)">
+			</span>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">违章时间</label>
+		<div class="col-xs-10">
+			<input type="text" id="vtime" name="vtime" readonly v-model="vrecord.vtime" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">违章地点</label>
+		<div class="col-xs-10">
+			<input type="text" id="vaddr" name="vaddr" v-model="vrecord.vaddr" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">状态</label>
+		<div class="col-xs-10">
+			<input type="text" id="vstate" name="vstate" readonly v-model="vrecord.vstate" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">备注</label>
+		<div class="col-xs-10">
+			<input type="text" id="vbackup" name="vbackup" v-model="vrecord.vbackup" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button"  :value="action" class="btn btn-success" id="addBtn" @click="modify"/>
+			<input type="button"  value="取消" class="btn btn-muted" @click="show=true, url='list', action='数据列表'"/>
+		</div>
+	</div>
+	</form>
+</div>
+<div id="addform" :style="{left: x+'px', top: y+'px'}" v-show="fk">
+	<h3 class="page-header">{{refObj.desc}}录入</h3>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.id}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txid" name="txid" v-model="refObj.idv" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.name}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txname" name="txname" v-model="refObj.namev" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button" @click="saverefinfo" value="保存" class="btn btn-success" id="addBtn"/>
+			<input type="button" @click="fk=false" value="关闭" class="btn btn-danger"/>
+		</div>
+	</div>
+	</form>
+</div>
+</div>
+<script type="text/javascript" src="js/vue.min.js"></script>
+<script type="text/javascript" src="js/axios.min.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/layer/layer.js"></script>
+<script type="text/javascript">
+var vm = new Vue({
+	el: "#app",
+	data: {
+		show: true,
+		msg: '',
+		url: 'list',
+		action: '数据列表',
+		vrecord: {},
+		list: [],
+		checked : false,
+		vids : [],
+		curpage : 1,
+		total : 0,
+		pagelist: [3,4,5],
+		line: 3,
+		fk: false,
+		x: 0,
+		y: 0,
+		refObj: {},
+		refList: {
+			Cheliang: {obj: 'cheliang', id: 'cid', name: 'cname', url: 'cheliang/insert', refid: 'cid', desc: '车辆'},
+			Wzitem: {obj: 'wzitem', id: 'wid', name: 'wcontent', url: 'wzitem/insert', refid: 'wid', desc: '违章行为'},
+		},
+		cheliangList: [],
+		wzitemList: [],
+	},
+	created: function() {
+		axios.post("http://localhost:8080/vrecord/selectTotal").then(res=>{
+			this.total = res.data;
+		})
+		this.selectByPage();
+		axios.post("http://localhost:8080/cheliang/selectList").then(res=>{
+			this.cheliangList = res.data;
+		})
+		axios.post("http://localhost:8080/wzitem/selectList").then(res=>{
+			this.wzitemList = res.data;
+		})
+	},
+	computed: {
+		totalpage: function() {
+			return parseInt((this.line-1+this.total)/this.line);
+		},
+		param: function() {
+			return "page="+this.curpage+"&line="+this.line;
+		}
+	},
+	watch: {
+		curpage: function(newCurpage) {
+			this.selectByPage();
+		},
+		line: function(newLine) {
+			if(this.curpage>this.totalpage){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		},
+		total: function(newTotal) {
+			if(this.curpage>this.totalpage && this.totalpage!=0){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		}
+	},
+	methods: {
+		selectList: function() {
+			this.curpage = 1;
+		},
+		selectByPage: function() {
+			if(this.total==0){
+				this.list = [];
+				return;
+			}
+			axios.post("http://localhost:8080/vrecord/selectByPage?"+this.param).then(res=>{
+				this.list = res.data;
+				this.allchecked();
+			});
+		},
+		deletevrecord: function(i) {
+			layer.confirm('确定要删除此违章记录吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/vrecord/delete?vid="+this.list[i].vid).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.list.splice(i, 1);
+						this.total -= 1;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		allchecked: function() {
+			this.vids = [];
+			if(this.checked){
+				for (var i = 0; i < this.list.length; i++) {
+					this.vids.push(this.list[i].vid);
+				}
+			}
+		},
+		toinsert: function() {
+			this.vrecord = {
+				vstate: 0,
+				cid: this.cheliangList[0].cid,
+				wid: this.wzitemList[0].wid,
+			};
+		},
+		modify: function() {
+			axios.post("http://localhost:8080/vrecord/"+this.url, this.vrecord).then(res=>{
+				if(res.data=="1"){
+					this.msg = "操作成功！";
+					if(this.url.lastIndexOf("insert")>=0){
+						this.total += 1;
+						this.vrecord = {};
+					}else{
+						this.selectByPage();
+					}
+				}else{
+					this.msg = "操作失败！";
+				}
+				layer.msg(this.msg);
+			})
+		},
+		toupdate: function(i) {
+			this.vrecord = this.list[i];
+			layer.confirm('确定要处罚该选违章记录吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/vrecord/update", this.vrecord).then(res=>{
+					if(res.data=="1"){
+						this.msg = "处罚成功！";
+						this.vrecord.vstate=1;
+					}else if(res.data=="2"){
+						this.msg = "余额不足！";
+					}else{
+						this.msg = "处罚失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		deleteList: function() {
+			if(this.vids.length==0){
+				this.msg = "必须选中一行！";
+				layer.msg(this.msg);
+				return;
+			}
+			layer.confirm('确定要删除已选违章记录吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/vrecord/deleteList/"+this.vids).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.total -= this.vids.length;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		showadd: function(event) {
+			this.fk = true;
+			this.refObj.idv = "";
+			this.refObj.namev = "";
+			this.x = pageX(event.target) - 325;
+			this.y = pageY(event.target) - 80;
+		},
+		saverefinfo: function () {
+			var param = {};
+			param[this.refObj.id] = this.refObj.idv;
+			param[this.refObj.name] = this.refObj.namev;
+			axios.post(this.refObj.url, param).then(res=>{
+				if(res.data=="1"){
+					this[this.refObj.obj+"List"].push(param);
+					this.vrecord[this.refObj.refid] = this.refObj.idv;
+				}else{
+					this.msg = "操作失败！";
+					layer.msg(this.msg);
+				}
+			});
+		}
+	}
+})
+
+function pageX(elem){
+    return elem.offsetParent?(elem.offsetLeft+pageX(elem.offsetParent)):elem.offsetLeft;
+}
+function pageY(elem){
+    return elem.offsetParent?(elem.offsetTop+pageY(elem.offsetParent)):elem.offsetTop;
+}
+
+</script>
+</body>
+</html>

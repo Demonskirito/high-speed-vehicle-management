@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>users here</title>
+<link rel="stylesheet" href="js/bootstrap/css/bootstrap.css" />
+<style type="text/css">
+.pagination {
+	margin: 0!important;
+}
+#addform{
+	position: absolute;width: 300px;height: 255px;
+	opacity: 0.8;filter: alpha(opacity=80);
+	background-color: #eee;padding:0 20px
+}
+</style>
+</head>
+<body>
+<div id="app" class="container">
+	<ol class="breadcrumb">
+		<li><a href="#">高速车辆管理系统</a></li>
+		<li><a href="#">用户管理</a></li>
+		<li><a href="#">{{action}}</a></li>
+	</ol>
+<div v-show="show">
+	<h2 class="page-header">用户展示</h2>
+	<form class="form-inline" role="form">
+		<input type="text" v-model="uname" class="form-control" placeholder="用户姓名">
+		<button type="button" @click="selectList" class="btn btn-success">搜索</button>
+		<button type="button" @click="deleteList" class="btn btn-danger">删除</button>
+	</form>
+	<hr>
+	<table class="table table-bordered table-striped">
+	<thead>
+		<tr>
+			<td align="center"><input type="checkbox" id="ck" name="ck" @click="allchecked()" v-model="checked" /></td>
+			<th>编号</th>
+			<th>姓名</th>
+			<th>密码</th>
+			<th>头像</th>
+			<th>站点</th>
+			<th>备注</th>
+			<th>操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr v-for="(temp,i) in list">
+			<td align="center"><input type="checkbox" id="dk" name="dk" :value="temp.usid" v-model="usids" /></td>
+			<td>{{temp.usid}}</td>
+			<td>{{temp.uname}}</td>
+			<td>{{temp.upwd}}</td>
+			<td>{{temp.uface}}</td>
+			<td>{{temp.zid}}</td>
+			<td>{{temp.ubackup}}</td>
+			<td><a href="javascript:;" @click="toupdate(i, show=false, url='update', action='修改')" class="btn btn-primary btn-sm update-btn">修改</a>
+				<a href="javascript:;" @click="deleteusers(i)" class="btn btn-danger btn-sm del-btn" data-id="6">删除</a>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<div class="row">
+		<div class="col-sm-4">
+			<div id="pagerInfo">
+				共{{total }}条数据，{{curpage }}/{{totalpage }}页，
+				<select id="line" name="line" v-model="line">
+					<option v-for="l in pagelist" :value="l">{{l}}</option>
+				</select>行
+			</div>
+		</div>
+		<div class="col-sm-8">
+			<nav id="pagerNav">
+	        	<ul class="pagination pagination-sm pull-right">
+	        		<li><a href="javascript:void(0);" @click="curpage=1" id="firstBtn">首页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage<=1)?1:curpage-1" id="prevBtn">上页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage>=totalpage)?totalpage:curpage+1" id="nextBtn">下页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=totalpage" id="lastBtn">末页</a></li>
+	        	</ul>
+	        </nav>
+		</div>
+	</div>
+	<div class="row" style="margin-top:20px">
+		<div class="col-sm-offset-8 col-sm-4">
+			<a href="#" @click="toinsert(show=false, url='insert', action='录入')" class="btn btn-success btn-block">增加一条</a>
+		</div>
+	</div>
+</div>
+<div v-show="!show">
+	<h2 class="page-header">用户{{action}}</h2>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-xs-2">编号</label>
+		<div class="col-xs-10">
+			<input type="text" id="usid" name="usid" v-model="users.usid" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">姓名</label>
+		<div class="col-xs-10">
+			<input type="text" id="uname" name="uname" v-model="users.uname" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">密码</label>
+		<div class="col-xs-10">
+			<input type="password" id="upwd" name="upwd" v-model="users.upwd" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">头像</label>
+		<div class="col-xs-10">
+			<input type="text" id="uface" name="uface" v-model="users.uface" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">站点</label>
+		<div class="col-xs-9">
+			<select name="zid" id="zid" v-model="users.zid" class="form-control">
+				<option v-for="zhandian in zhandianList" :value="zhandian.zid">{{zhandian.zname}}</option>
+			</select>
+		</div>
+		<div class="col-xs-1">
+			<span>
+				<img src="js/edit_add.png" @click="showadd(event, refObj=refList.Zhandian)">
+			</span>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">备注</label>
+		<div class="col-xs-10">
+			<input type="text" id="ubackup" name="ubackup" v-model="users.ubackup" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button"  :value="action" class="btn btn-success" id="addBtn" @click="modify"/>
+			<input type="button"  value="取消" class="btn btn-muted" @click="show=true, url='list', action='数据列表'"/>
+		</div>
+	</div>
+	</form>
+</div>
+<div id="addform" :style="{left: x+'px', top: y+'px'}" v-show="fk">
+	<h3 class="page-header">{{refObj.desc}}录入</h3>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.id}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txid" name="txid" v-model="refObj.idv" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-sm-2">{{refObj.name}}</label>
+		<div class="col-sm-10">
+			<input type="text" id="txname" name="txname" v-model="refObj.namev" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button" @click="saverefinfo" value="保存" class="btn btn-success" id="addBtn"/>
+			<input type="button" @click="fk=false" value="关闭" class="btn btn-danger"/>
+		</div>
+	</div>
+	</form>
+</div>
+</div>
+<script type="text/javascript" src="js/vue.min.js"></script>
+<script type="text/javascript" src="js/axios.min.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/layer/layer.js"></script>
+<script type="text/javascript">
+var vm = new Vue({
+	el: "#app",
+	data: {
+		show: true,
+		msg: '',
+		url: 'list',
+		action: '数据列表',
+		users: {},
+		list: [],
+		checked : false,
+		usids : [],
+		curpage : 1,
+		total : 0,
+		pagelist: [3,4,5],
+		line: 3,
+		fk: false,
+		x: 0,
+		y: 0,
+		refObj: {},
+		refList: {
+			Zhandian: {obj: 'zhandian', id: 'zid', name: 'zname', url: 'zhandian/insert', refid: 'zid', desc: '站点'},
+		},
+		zhandianList: [],
+		uname: '',
+	},
+	created: function() {
+		axios.post("http://localhost:8080/users/selectTotal").then(res=>{
+			this.total = res.data;
+		})
+		this.selectByPage();
+		axios.post("http://localhost:8080/zhandian/selectList").then(res=>{
+			this.zhandianList = res.data;
+		})
+	},
+	computed: {
+		totalpage: function() {
+			return parseInt((this.line-1+this.total)/this.line);
+		},
+		param: function() {
+			return "page="+this.curpage+"&line="+this.line;
+		}
+	},
+	watch: {
+		curpage: function(newCurpage) {
+			this.selectByPage();
+		},
+		line: function(newLine) {
+			if(this.curpage>this.totalpage){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		},
+		total: function(newTotal) {
+			if(this.curpage>this.totalpage && this.totalpage!=0){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		}
+	},
+	methods: {
+		selectList: function() {
+			axios.post("http://localhost:8080/users/search","uname="+this.uname).then(res=>{
+				this.list = res.data;
+			});
+		},
+		selectByPage: function() {
+			if(this.total==0){
+				this.list = [];
+				return;
+			}
+			axios.post("http://localhost:8080/users/selectByPage?"+this.param).then(res=>{
+				this.list = res.data;
+				this.allchecked();
+			});
+		},
+		deleteusers: function(i) {
+			layer.confirm('确定要删除此用户吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/users/delete?usid="+this.list[i].usid).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.list.splice(i, 1);
+						this.total -= 1;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		allchecked: function() {
+			this.usids = [];
+			if(this.checked){
+				for (var i = 0; i < this.list.length; i++) {
+					this.usids.push(this.list[i].usid);
+				}
+			}
+		},
+		toinsert: function() {
+			this.users = {};
+		},
+		modify: function() {
+			axios.post("http://localhost:8080/users/"+this.url, this.users).then(res=>{
+				if(res.data=="1"){
+					this.msg = "操作成功！";
+					if(this.url.lastIndexOf("insert")>=0){
+						this.total += 1;
+						this.users = {};
+					}else{
+						this.selectByPage();
+					}
+				}else{
+					this.msg = "操作失败！";
+				}
+				layer.msg(this.msg);
+			})
+		},
+		toupdate: function(i) {
+			this.users = this.list[i];
+		},
+		deleteList: function() {
+			if(this.usids.length==0){
+				this.msg = "必须选中一行！";
+				layer.msg(this.msg);
+				return;
+			}
+			layer.confirm('确定要删除已选用户吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/users/deleteList/",this.usids).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.total -= this.usids.length;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		showadd: function(event) {
+			this.fk = true;
+			this.refObj.idv = "";
+			this.refObj.namev = "";
+			this.x = pageX(event.target) - 325;
+			this.y = pageY(event.target) - 80;
+		},
+		saverefinfo: function () {
+			var param = {};
+			param[this.refObj.id] = this.refObj.idv;
+			param[this.refObj.name] = this.refObj.namev;
+			axios.post(this.refObj.url, param).then(res=>{
+				if(res.data=="1"){
+					this[this.refObj.obj+"List"].push(param);
+					this.users[this.refObj.refid] = this.refObj.idv;
+				}else{
+					this.msg = "操作失败！";
+					layer.msg(this.msg);
+				}
+			});
+		}
+	}
+})
+
+function pageX(elem){
+    return elem.offsetParent?(elem.offsetLeft+pageX(elem.offsetParent)):elem.offsetLeft;
+}
+function pageY(elem){
+    return elem.offsetParent?(elem.offsetTop+pageY(elem.offsetParent)):elem.offsetTop;
+}
+
+</script>
+</body>
+</html>

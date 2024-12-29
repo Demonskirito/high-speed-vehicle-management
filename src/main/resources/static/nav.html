@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+	<link rel="stylesheet" href="js/bootstrap/css/bootstrap.css" />
+	<title>nav</title>
+	<style type="text/css">
+		* {
+			margin: 0;
+			padding: 0;
+		}		
+		body {
+			background: #333333;
+		}
+		/*头像区*/
+		.touxiang {
+			width: 150px;
+			height: 150px;
+			margin: 20px auto;
+			border-radius: 50%;
+			border:5px solid #ffffff;
+			overflow: hidden;
+		}		
+		.touxiang img {
+			width: 100%;
+			display: block;			
+		}		
+		/*左侧导航链接*/
+		.nav-left .list-group-item {
+			background: transparent;
+			border: none;
+			border-radius: 0!important;
+			line-height: 35px;
+			text-align: center;
+			color: #eeeeee;
+			font-size: 16px;
+			letter-spacing: 1px;
+			border-bottom: 1px solid #444444;
+		}
+	</style>
+</head>
+<body>
+	<div class="container-fluid">		
+		<!-- 头像区 -->
+		<div class="row touxiang">
+			<img id="empPic" src="js/liudehua.jpg" alt="头像" class="img-responsive">
+		</div>	
+		<p class="text-center" style="color:#eeeeee">欢迎你，jojo</p>		
+		<!-- 左侧导航链接 -->
+		<div class="row nav-left">
+			<div class="list-group">
+				<a href="analysis.html" target="main" class="list-group-item">数据分析</a>
+				<a href="zhandianmain.html" target="main" class="list-group-item">站点管理</a>
+				<a href="wzitemmain.html" target="main" class="list-group-item">违章行为管理</a>
+				<a href="usersmain.html" target="main" class="list-group-item">用户管理</a>
+				<a href="jiashiyuanmain.html" target="main" class="list-group-item">驾驶员管理</a>
+				<a href="cheliangmain.html" target="main" class="list-group-item">车辆管理</a>
+				<a href="mrecordmain.html" target="main" class="list-group-item">收费记录管理</a>
+				<a href="vrecordmain.html" target="main" class="list-group-item">违章记录管理</a>
+				<a href="login.html" target="_top" class="list-group-item">退出登录</a>
+			</div>
+		</div>
+	</div>
+    <script src="js/jquery.js"></script>
+	<script type="text/javascript">
+		if(!sessionStorage.uname){
+			top.location.href = 'login.html';
+		}else{
+			$(".text-center").text("欢迎你，"+sessionStorage.uname);
+		}
+	</script>
+</body>
+</html>

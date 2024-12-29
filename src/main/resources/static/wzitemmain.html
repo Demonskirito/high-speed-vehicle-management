@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>wzitem here</title>
+<link rel="stylesheet" href="js/bootstrap/css/bootstrap.css" />
+<style type="text/css">
+.pagination {
+	margin: 0!important;
+}
+#addform{
+	position: absolute;width: 300px;height: 255px;
+	opacity: 0.8;filter: alpha(opacity=80);
+	background-color: #eee;padding:0 20px
+}
+</style>
+</head>
+<body>
+<div id="app" class="container">
+	<ol class="breadcrumb">
+		<li><a href="#">高速车辆管理系统</a></li>
+		<li><a href="#">违章行为管理</a></li>
+		<li><a href="#">{{action}}</a></li>
+	</ol>
+<div v-show="show">
+	<h2 class="page-header">违章行为展示</h2>
+	<form class="form-inline" role="form">
+		<input type="text" v-model="wcontent" class="form-control" placeholder="违章内容">
+		<button type="button" @click="selectList" class="btn btn-success">搜索</button>
+		<button type="button" @click="deleteList" class="btn btn-danger">删除</button>
+	</form>
+	<hr>
+	<table class="table table-bordered table-striped">
+	<thead>
+		<tr>
+			<td align="center"><input type="checkbox" id="ck" name="ck" @click="allchecked()" v-model="checked" /></td>
+			<th>编号</th>
+			<th>内容</th>
+			<th>罚款</th>
+			<th>扣分</th>
+			<th>备注</th>
+			<th>操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr v-for="(temp,i) in list">
+			<td align="center"><input type="checkbox" id="dk" name="dk" :value="temp.wid" v-model="wids" /></td>
+			<td>{{temp.wid}}</td>
+			<td>{{temp.wcontent}}</td>
+			<td>{{temp.wmoney}}</td>
+			<td>{{temp.wscore}}</td>
+			<td>{{temp.wbackup}}</td>
+			<td><a href="javascript:;" @click="toupdate(i, show=false, url='update', action='修改')" class="btn btn-primary btn-sm update-btn">修改</a>
+				<a href="javascript:;" @click="deletewzitem(i)" class="btn btn-danger btn-sm del-btn" data-id="6">删除</a>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<div class="row">
+		<div class="col-sm-4">
+			<div id="pagerInfo">
+				共{{total }}条数据，{{curpage }}/{{totalpage }}页，
+				<select id="line" name="line" v-model="line">
+					<option v-for="l in pagelist" :value="l">{{l}}</option>
+				</select>行
+			</div>
+		</div>
+		<div class="col-sm-8">
+			<nav id="pagerNav">
+	        	<ul class="pagination pagination-sm pull-right">
+	        		<li><a href="javascript:void(0);" @click="curpage=1" id="firstBtn">首页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage<=1)?1:curpage-1" id="prevBtn">上页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=(curpage>=totalpage)?totalpage:curpage+1" id="nextBtn">下页</a></li>
+	        		<li><a href="javascript:void(0);" @click="curpage=totalpage" id="lastBtn">末页</a></li>
+	        	</ul>
+	        </nav>
+		</div>
+	</div>
+	<div class="row" style="margin-top:20px">
+		<div class="col-sm-offset-8 col-sm-4">
+			<a href="#" @click="toinsert(show=false, url='insert', action='录入')" class="btn btn-success btn-block">增加一条</a>
+		</div>
+	</div>
+</div>
+<div v-show="!show">
+	<h2 class="page-header">违章行为{{action}}</h2>
+	<form id="form1" class="form-horizontal">
+	<div class="form-group">
+		<label for="" class="col-xs-2">编号</label>
+		<div class="col-xs-10">
+			<input type="text" id="wid" name="wid" v-model="wzitem.wid" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">内容</label>
+		<div class="col-xs-10">
+			<input type="text" id="wcontent" name="wcontent" v-model="wzitem.wcontent" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">罚款</label>
+		<div class="col-xs-10">
+			<input type="text" id="wmoney" name="wmoney" v-model="wzitem.wmoney" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">扣分</label>
+		<div class="col-xs-10">
+			<input type="text" id="wscore" name="wscore" v-model="wzitem.wscore" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="" class="col-xs-2">备注</label>
+		<div class="col-xs-10">
+			<input type="text" id="wbackup" name="wbackup" v-model="wzitem.wbackup" class="form-control"/>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-10 col-sm-offset-2">
+			<input type="button"  :value="action" class="btn btn-success" id="addBtn" @click="modify"/>
+			<input type="button"  value="取消" class="btn btn-muted" @click="show=true, url='list', action='数据列表'"/>
+		</div>
+	</div>
+	</form>
+</div>
+</div>
+<script type="text/javascript" src="js/vue.min.js"></script>
+<script type="text/javascript" src="js/axios.min.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/layer/layer.js"></script>
+<script type="text/javascript">
+var vm = new Vue({
+	el: "#app",
+	data: {
+		show: true,
+		msg: '',
+		url: 'list',
+		action: '数据列表',
+		wzitem: {},
+		list: [],
+		checked : false,
+		wids : [],
+		curpage : 1,
+		total : 0,
+		pagelist: [3,4,5],
+		line: 3,
+		wcontent: '',
+	},
+	created: function() {
+		axios.post("http://localhost:8080/wzitem/selectTotal").then(res=>{
+			this.total = res.data;
+		})
+		this.selectByPage();
+	},
+	computed: {
+		totalpage: function() {
+			return parseInt((this.line-1+this.total)/this.line);
+		},
+		param: function() {
+			return "page="+this.curpage+"&line="+this.line;
+		}
+	},
+	watch: {
+		curpage: function(newCurpage) {
+			this.selectByPage();
+		},
+		line: function(newLine) {
+			if(this.curpage>this.totalpage){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		},
+		total: function(newTotal) {
+			if(this.curpage>this.totalpage && this.totalpage!=0){
+				this.curpage = this.totalpage;
+			}else{
+				this.selectByPage();
+			}
+		}
+	},
+	methods: {
+		selectList: function() {
+			axios.post("http://localhost:8080/wzitem/search","wcontent="+this.wcontent).then(res=>{
+				this.list = res.data;
+			});
+		},
+		selectByPage: function() {
+			if(this.total==0){
+				this.list = [];
+				return;
+			}
+			axios.post("http://localhost:8080/wzitem/selectByPage?"+this.param).then(res=>{
+				this.list = res.data;
+				this.allchecked();
+			});
+		},
+		deletewzitem: function(i) {
+			layer.confirm('确定要删除此违章行为吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/wzitem/delete?wid="+this.list[i].wid).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.list.splice(i, 1);
+						this.total -= 1;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+		allchecked: function() {
+			this.wids = [];
+			if(this.checked){
+				for (var i = 0; i < this.list.length; i++) {
+					this.wids.push(this.list[i].wid);
+				}
+			}
+		},
+		toinsert: function() {
+			this.wzitem = {};
+		},
+		modify: function() {
+			axios.post("http://localhost:8080/wzitem/"+this.url, this.wzitem).then(res=>{
+				if(res.data=="1"){
+					this.msg = "操作成功！";
+					if(this.url.lastIndexOf("insert")>=0){
+						this.total += 1;
+						this.wzitem = {};
+					}else{
+						this.selectByPage();
+					}
+				}else{
+					this.msg = "操作失败！";
+				}
+				layer.msg(this.msg);
+			})
+		},
+		toupdate: function(i) {
+			this.wzitem = this.list[i];
+		},
+		deleteList: function() {
+			if(this.wids.length==0){
+				this.msg = "必须选中一行！";
+				layer.msg(this.msg);
+				return;
+			}
+			layer.confirm('确定要删除已选违章行为吗？', {
+			    btn: ['确定','取消']
+			}, ()=>{
+				layer.closeAll();
+				axios.post("http://localhost:8080/wzitem/deleteList/",this.wids).then(res=>{
+					if(res.data=="1"){
+						this.msg = "操作成功！";
+						this.total -= this.wids.length;
+					}else{
+						this.msg = "操作失败！";
+					}
+					layer.msg(this.msg);
+				})
+			});
+		},
+	}
+})
+
+</script>
+</body>
+</html>
